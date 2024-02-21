@@ -1,0 +1,93 @@
+import numpy as np 
+import pandas as pd 
+import seaborn as sb 
+import matplotlib.pyplot as plt 
+from warnings import filterwarnings 
+filterwarnings("ignore")
+     
+data = pd.read_csv("car_purchasing.csv",encoding='ISO-8859-1')
+     
+data.head() 
+data.info()
+data.corr()[["car purchase amount"]].sort_values(["car purchase amount"])
+data.isna().sum()
+car_df = data.drop(["customer name","customer e-mail","country","JobTitle","Benefits"],axis=1)
+Y = car_df[["car purchase amount"]]
+X = car_df.drop(["car purchase amount"],axis=1)
+print(X.shape,Y.shape)
+from sklearn.preprocessing import MinMaxScaler
+mms = MinMaxScaler()
+X_scaled = mms.fit_transform(X)
+Y_scaled = mms.fit_transform(Y.values.reshape(-1,1))
+
+print(X_scaled.shape,Y_scaled.shape)
+from sklearn.model_selection import train_test_split
+xtrain,xtest,ytrain,ytest = train_test_split(X_scaled,Y_scaled,test_size=0.25,random_state=101)
+
+print(xtrain.shape,ytrain.shape,xtest.shape,ytest.shape)
+from sklearn.ensemble import RandomForestRegressor
+model = RandomForestRegressor()
+model.fit(xtrain, ytrain)
+print(model.score(xtest, ytest)*100)
+import tensorflow.keras
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+
+model = Sequential()
+model.add(Dense(25, input_dim=9, activation='relu'))
+model.add(Dense(25, activation='relu'))
+model.add(Dense(1, activation='linear'))
+model.summary()
+model.compile(optimizer='adam',loss='mean_squared_error')
+epochs_hist = model.fit(xtrain,ytrain,epochs=10,batch_size=50,verbose=1,validation_split=0.2)
+
+
+epochs_hist.history.keys()
+plt.figure(figsize=(3,3),dpi=100)
+plt.plot(epochs_hist.history["loss"])
+plt.plot(epochs_hist.history["val_loss"])
+
+plt.title('Model Loss During Training or Validation')
+plt.ylabel('Training & Validation Losses')
+plt.xlabel('Epoch')
+plt.legend(['Training Loss', 'Validation Loss'])
+X_random_sample = np.array([[0,42,167411.18,0,400184.25,567595.43,567595.43,11609.38091,238961.2505]])
+y_predict = model.predict(X_random_sample)
+from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import Ridge
+
+#Metrics
+from sklearn.metrics import r2_score
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_absolute_error
+
+#function
+def performance(model,X_train,y_train,y_pred,y_test):
+    print('Train Score:',model.score(xtrain,ytrain))
+    print('Test Score:',r2_score(ytest,y_pred))
+    print('')
+    print('MSE:',mean_squared_error(ytest,y_pred))
+    print('MAE:',mean_absolute_error(ytest,y_pred))
+lr = LinearRegression()
+lr.fit(xtrain,ytrain)
+lr_pred = lr.predict(xtest)
+performance(lr,xtrain,ytrain,lr_pred,ytest) 
+plt.figure(figsize=(3,3),dpi=100)
+plt.scatter(lr_pred,ytest,c='blue',marker='o',s=25)
+plt.plot([ytest.min(),ytest.max()],[ytest.min(),ytest.max()],c='black',lw=1)
+
+plt.xlabel('Predicted Data')
+plt.ylabel('Actual Data')
+plt.title('Predict Data VS Actual Data')
+plt.show()
+ridge = Ridge(alpha = 1)
+ridge.fit(xtrain,ytrain)
+ridge_pred = ridge.predict(xtest)
+performance(ridge,xtrain,ytrain,ridge_pred,ytest)
+plt.figure(figsize=(3,3),dpi=100)
+plt.scatter(ridge_pred,ytest,c='blue',marker='o',s=25)
+plt.plot([ytest.min(),ytest.max()],[ytest.min(),ytest.max()],c='black',lw=1)
+plt.xlabel('Predicted Data')
+plt.ylabel('Actual Data')
+plt.title('Predict Data VS Actual Data')
+plt.show()
